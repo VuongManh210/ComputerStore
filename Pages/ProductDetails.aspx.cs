@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data;
+using System.Web.UI.WebControls;
 using ComputerStore.BLL;
+using ComputerStore; // Thêm namespace
 
 namespace ComputerStore.Pages
 {
@@ -15,7 +17,8 @@ namespace ComputerStore.Pages
             {
                 try
                 {
-                    if (int.TryParse(Request.QueryString["productId"], out int productId))
+                    int productId;
+                    if (int.TryParse(Request.QueryString["productId"], out productId))
                     {
                         DataTable dt = productBLL.GetProductById(productId);
                         if (dt.Rows.Count > 0)
@@ -23,7 +26,7 @@ namespace ComputerStore.Pages
                             fvProduct.DataSource = dt;
                             fvProduct.DataBind();
 
-                            System.Web.UI.WebControls.Repeater rptImages = (System.Web.UI.WebControls.Repeater)fvProduct.FindControl("rptProductImages");
+                            Repeater rptImages = (Repeater)fvProduct.FindControl("rptProductImages");
                             if (rptImages != null)
                             {
                                 rptImages.DataSource = productBLL.GetProductImages(productId);
@@ -33,96 +36,128 @@ namespace ComputerStore.Pages
                         else
                         {
                             lblMessage.Text = "Sản phẩm không tồn tại.";
+                            lblMessage.Visible = true;
                         }
                     }
                     else
                     {
                         lblMessage.Text = "ID sản phẩm không hợp lệ.";
+                        lblMessage.Visible = true;
                     }
                 }
                 catch (Exception ex)
                 {
                     lblMessage.Text = "Lỗi: " + ex.Message;
+                    lblMessage.Visible = true;
                 }
             }
         }
 
         protected void btnAddToCart_Click(object sender, EventArgs e)
         {
-            if (Session["UserId"] == null)
-            {
-                Response.Redirect("~/User/Login.aspx");
-                return;
-            }
+            AuthHelper.RequireUserOrShopowner(Response);
 
             try
             {
-                int userId = int.Parse(Session["UserId"].ToString());
-                int productId = int.Parse(Request.QueryString["productId"]);
-                int quantity = int.Parse((fvProduct.FindControl("txtQuantity") as System.Web.UI.WebControls.TextBox).Text);
+                int userId = AuthHelper.GetUserId();
+                int productId;
+                if (!int.TryParse(Request.QueryString["productId"], out productId))
+                {
+                    lblMessage.Text = "ID sản phẩm không hợp lệ.";
+                    lblMessage.Visible = true;
+                    return;
+                }
+                TextBox txtQuantity = (TextBox)fvProduct.FindControl("txtQuantity");
+                int quantity;
+                if (!int.TryParse(txtQuantity.Text, out quantity) || quantity <= 0)
+                {
+                    lblMessage.Text = "Số lượng không hợp lệ.";
+                    lblMessage.Visible = true;
+                    return;
+                }
 
                 DataTable product = productBLL.GetProductById(productId);
                 if (product.Rows.Count == 0)
                 {
                     lblMessage.Text = "Sản phẩm không tồn tại.";
+                    lblMessage.Visible = true;
                     return;
                 }
 
                 int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
                 if (quantity > stock)
                 {
-                    lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                    lblMessage.Text = "Số lượng yêu cầu vượt quá tồn kho (" + stock + " sản phẩm).";
+                    lblMessage.Visible = true;
                     return;
                 }
 
                 if (cartBLL.AddToCart(userId, productId, quantity))
                 {
                     lblMessage.Text = "Đã thêm vào giỏ hàng!";
-                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    lblMessage.CssClass = "alert alert-success";
+                    lblMessage.Visible = true;
                 }
                 else
                 {
                     lblMessage.Text = "Thêm vào giỏ hàng thất bại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
 
         protected void btnBuyNow_Click(object sender, EventArgs e)
         {
-            if (Session["UserId"] == null)
-            {
-                Response.Redirect("~/User/Login.aspx");
-                return;
-            }
+            AuthHelper.RequireUserOrShopowner(Response);
 
             try
             {
-                int productId = int.Parse(Request.QueryString["productId"]);
-                int quantity = int.Parse((fvProduct.FindControl("txtQuantity") as System.Web.UI.WebControls.TextBox).Text);
+                int productId;
+                if (!int.TryParse(Request.QueryString["productId"], out productId))
+                {
+                    lblMessage.Text = "ID sản phẩm không hợp lệ.";
+                    lblMessage.Visible = true;
+                    return;
+                }
+                TextBox txtQuantity = (TextBox)fvProduct.FindControl("txtQuantity");
+                int quantity;
+                if (!int.TryParse(txtQuantity.Text, out quantity) || quantity <= 0)
+                {
+                    lblMessage.Text = "Số lượng không hợp lệ.";
+                    lblMessage.Visible = true;
+                    return;
+                }
 
                 DataTable product = productBLL.GetProductById(productId);
                 if (product.Rows.Count == 0)
                 {
                     lblMessage.Text = "Sản phẩm không tồn tại.";
+                    lblMessage.Visible = true;
                     return;
                 }
 
                 int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
                 if (quantity > stock)
                 {
-                    lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                    lblMessage.Text = "Số lượng yêu cầu vượt quá tồn kho (" + stock + " sản phẩm).";
+                    lblMessage.Visible = true;
                     return;
                 }
 
-                Response.Redirect($"~/Pages/Checkout.aspx?productId={productId}&quantity={quantity}");
+                Response.Redirect("~/Pages/Checkout.aspx?productId=" + productId + "&quantity=" + quantity);
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
     }

@@ -10,7 +10,7 @@ namespace ComputerStore.User
         protected void btnRegister_Click(object sender, EventArgs e)
         {
             string username = txtUsername.Text.Trim();
-            string password = txtPassword.Text.Trim(); // Cần mã hóa trong thực tế
+            string password = txtPassword.Text.Trim();
             string email = txtEmail.Text.Trim();
             string fullName = txtFullName.Text.Trim();
             string phone = txtPhone.Text.Trim();
@@ -18,19 +18,25 @@ namespace ComputerStore.User
 
             try
             {
-                if (userBLL.RegisterUser(username, password, email, fullName, phone, address))
+                bool result = userBLL.RegisterUser(username, password, email, fullName, phone, address);
+                if (result)
                 {
                     lblMessage.Text = "Đăng ký thành công! Vui lòng <a href='Login.aspx'>đăng nhập</a>.";
-                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    lblMessage.CssClass = "alert alert-success";
+                    lblMessage.Visible = true;
                 }
                 else
                 {
                     lblMessage.Text = "Đăng ký thất bại. Vui lòng thử lại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
     }

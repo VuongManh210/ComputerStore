@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data;
+using System.Web.UI.WebControls;
 using ComputerStore.BLL;
+using ComputerStore; // Thêm namespace
 
 namespace ComputerStore.Admin
 {
@@ -10,13 +12,14 @@ namespace ComputerStore.Admin
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            if (!AuthHelper.IsAdmin() && !AuthHelper.IsShopowner())
+            {
+                Response.Redirect("~/User/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
-                if (Session["Role"] == null || Session["Role"].ToString() != "admin")
-                {
-                    Response.Redirect("~/User/Login.aspx");
-                    return;
-                }
                 BindProducts();
             }
         }
@@ -25,12 +28,24 @@ namespace ComputerStore.Admin
         {
             try
             {
-                gvProducts.DataSource = productBLL.GetAllProducts();
+                DataTable dt;
+                if (AuthHelper.IsShopowner())
+                {
+                    int userId = AuthHelper.GetUserId();
+                    dt = productBLL.GetProductsByShopowner(userId);
+                }
+                else
+                {
+                    dt = productBLL.GetAllProducts();
+                }
+                gvProducts.DataSource = dt;
                 gvProducts.DataBind();
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
 
@@ -40,41 +55,68 @@ namespace ComputerStore.Admin
             {
                 string name = txtName.Text.Trim();
                 string description = txtDescription.Text.Trim();
-                decimal price = decimal.Parse(txtPrice.Text.Trim());
-                int stock = int.Parse(txtStock.Text.Trim());
+                decimal price;
+                if (!decimal.TryParse(txtPrice.Text.Trim(), out price))
+                {
+                    lblMessage.Text = "Giá không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
+                int stock;
+                if (!int.TryParse(txtStock.Text.Trim(), out stock))
+                {
+                    lblMessage.Text = "Số lượng tồn kho không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
                 string imageData = txtImageData.Text.Trim();
 
-                if (!imageData.StartsWith("images/") && !string.IsNullOrEmpty(imageData))
+                if (!string.IsNullOrEmpty(imageData) && !imageData.StartsWith("images/"))
                 {
                     lblMessage.Text = "Hình ảnh phải bắt đầu bằng 'images/'.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                     return;
                 }
 
-                if (productBLL.AddProduct(name, description, price, stock, imageData))
+                int? shopownerId = null;
+                if (AuthHelper.IsShopowner())
+                {
+                    shopownerId = AuthHelper.GetUserId();
+                }
+
+                if (productBLL.AddProduct(name, description, price, stock, imageData, shopownerId))
                 {
                     lblMessage.Text = "Thêm sản phẩm thành công!";
-                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    lblMessage.CssClass = "alert alert-success";
+                    lblMessage.Visible = true;
                     BindProducts();
                     ClearForm();
                 }
                 else
                 {
                     lblMessage.Text = "Thêm sản phẩm thất bại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
 
-        protected void gvProducts_RowEditing(object sender, System.Web.UI.WebControls.GridViewEditEventArgs e)
+        protected void gvProducts_RowEditing(object sender, GridViewEditEventArgs e)
         {
-            // Chuyển hướng hoặc hiển thị form chỉnh sửa
-            Response.Redirect($"EditProduct.aspx?productId={gvProducts.DataKeys[e.NewEditIndex].Value}");
+            int productId = Convert.ToInt32(gvProducts.DataKeys[e.NewEditIndex].Value);
+            Response.Redirect("~/Admin/EditProduct.aspx?productId=" + productId);
         }
 
-        protected void gvProducts_RowDeleting(object sender, System.Web.UI.WebControls.GridViewDeleteEventArgs e)
+        protected void gvProducts_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
             try
             {
@@ -82,17 +124,22 @@ namespace ComputerStore.Admin
                 if (productBLL.DeleteProduct(productId))
                 {
                     lblMessage.Text = "Xóa sản phẩm thành công!";
-                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    lblMessage.CssClass = "alert alert-success";
+                    lblMessage.Visible = true;
                     BindProducts();
                 }
                 else
                 {
                     lblMessage.Text = "Xóa sản phẩm thất bại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data.SqlClient;
 using ComputerStore.DAL;
+using ComputerStore; // Thêm namespace
 
 namespace ComputerStore.Pages
 {
@@ -8,21 +9,29 @@ namespace ComputerStore.Pages
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            AuthHelper.RequireUserOrShopowner(Response);
+
             if (!IsPostBack)
             {
-                if (Session["UserId"] == null)
+                try
                 {
-                    Response.Redirect("~/User/Login.aspx");
-                    return;
+                    int orderId;
+                    if (int.TryParse(Request.QueryString["orderId"], out orderId))
+                    {
+                        lblOrderId.Text = orderId.ToString();
+                    }
+                    else
+                    {
+                        lblMessage.Text = "ID đơn hàng không hợp lệ.";
+                        lblMessage.CssClass = "alert alert-danger";
+                        lblMessage.Visible = true;
+                    }
                 }
-
-                if (int.TryParse(Request.QueryString["orderId"], out int orderId))
+                catch (Exception ex)
                 {
-                    lblOrderId.Text = orderId.ToString();
-                }
-                else
-                {
-                    lblMessage.Text = "ID đơn hàng không hợp lệ.";
+                    lblMessage.Text = "Lỗi: " + ex.Message;
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
         }
@@ -31,11 +40,17 @@ namespace ComputerStore.Pages
         {
             try
             {
-                int userId = int.Parse(Session["UserId"].ToString());
-                int orderId = int.Parse(Request.QueryString["orderId"]);
+                int userId = AuthHelper.GetUserId();
+                int orderId;
+                if (!int.TryParse(Request.QueryString["orderId"], out orderId))
+                {
+                    lblMessage.Text = "ID đơn hàng không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
                 string paymentMethod = ddlPaymentMethod.SelectedValue;
 
-                // Lấy total_amount từ Orders
                 string query = "SELECT total_amount FROM Orders WHERE order_id = @orderId";
                 SqlParameter[] parameters = new SqlParameter[]
                 {
@@ -46,10 +61,11 @@ namespace ComputerStore.Pages
                 if (totalAmount == null)
                 {
                     lblMessage.Text = "Đơn hàng không tồn tại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                     return;
                 }
 
-                // Thêm bản ghi vào Payment
                 query = "INSERT INTO Payment (order_id, user_id, amount, payment_method, payment_status, transaction_id) " +
                         "VALUES (@orderId, @userId, @amount, @paymentMethod, 'completed', @transactionId)";
                 parameters = new SqlParameter[]
@@ -64,16 +80,21 @@ namespace ComputerStore.Pages
                 if (DbHelper.ExecuteNonQuery(query, parameters) > 0)
                 {
                     lblMessage.Text = "Thanh toán thành công!";
-                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    lblMessage.CssClass = "alert alert-success";
+                    lblMessage.Visible = true;
                 }
                 else
                 {
                     lblMessage.Text = "Thanh toán thất bại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
     }

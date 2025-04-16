@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Web.UI.WebControls;
 using ComputerStore.BLL;
-using ComputerStore.DAL;
+using ComputerStore; // Thêm namespace
 
 namespace ComputerStore.Admin
 {
@@ -12,21 +13,35 @@ namespace ComputerStore.Admin
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            if (!AuthHelper.IsAdmin() && !AuthHelper.IsShopowner())
+            {
+                Response.Redirect("~/User/Login.aspx");
+                return;
+            }
+
             if (!IsPostBack)
             {
-                if (Session["Role"] == null || Session["Role"].ToString() != "admin")
-                {
-                    Response.Redirect("~/User/Login.aspx");
-                    return;
-                }
-
                 try
                 {
-                    if (int.TryParse(Request.QueryString["productId"], out int productId))
+                    int productId;
+                    if (int.TryParse(Request.QueryString["productId"], out productId))
                     {
                         DataTable dt = productBLL.GetProductById(productId);
                         if (dt.Rows.Count > 0)
                         {
+                            if (AuthHelper.IsShopowner())
+                            {
+                                int userId = AuthHelper.GetUserId();
+                                if (dt.Rows[0]["shopowner_id"] != DBNull.Value && Convert.ToInt32(dt.Rows[0]["shopowner_id"]) != userId)
+                                {
+                                    lblMessage.Text = "Bạn không có quyền chỉnh sửa sản phẩm này.";
+                                    lblMessage.CssClass = "alert alert-danger";
+                                    lblMessage.Visible = true;
+                                    btnUpdate.Visible = false;
+                                    return;
+                                }
+                            }
+
                             txtName.Text = dt.Rows[0]["name"].ToString();
                             txtDescription.Text = dt.Rows[0]["description"].ToString();
                             txtPrice.Text = dt.Rows[0]["price"].ToString();
@@ -36,16 +51,22 @@ namespace ComputerStore.Admin
                         else
                         {
                             lblMessage.Text = "Sản phẩm không tồn tại.";
+                            lblMessage.CssClass = "alert alert-danger";
+                            lblMessage.Visible = true;
                         }
                     }
                     else
                     {
                         lblMessage.Text = "ID sản phẩm không hợp lệ.";
+                        lblMessage.CssClass = "alert alert-danger";
+                        lblMessage.Visible = true;
                     }
                 }
                 catch (Exception ex)
                 {
                     lblMessage.Text = "Lỗi: " + ex.Message;
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
         }
@@ -54,17 +75,53 @@ namespace ComputerStore.Admin
         {
             try
             {
-                int productId = int.Parse(Request.QueryString["productId"]);
+                int productId;
+                if (!int.TryParse(Request.QueryString["productId"], out productId))
+                {
+                    lblMessage.Text = "ID sản phẩm không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
                 string name = txtName.Text.Trim();
                 string description = txtDescription.Text.Trim();
-                decimal price = decimal.Parse(txtPrice.Text.Trim());
-                int stock = int.Parse(txtStock.Text.Trim());
+                decimal price;
+                if (!decimal.TryParse(txtPrice.Text.Trim(), out price))
+                {
+                    lblMessage.Text = "Giá không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
+                int stock;
+                if (!int.TryParse(txtStock.Text.Trim(), out stock))
+                {
+                    lblMessage.Text = "Số lượng tồn kho không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
                 string imageData = txtImageData.Text.Trim();
 
-                if (!imageData.StartsWith("images/") && !string.IsNullOrEmpty(imageData))
+                if (!string.IsNullOrEmpty(imageData) && !imageData.StartsWith("images/"))
                 {
                     lblMessage.Text = "Hình ảnh phải bắt đầu bằng 'images/'.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                     return;
+                }
+
+                if (AuthHelper.IsShopowner())
+                {
+                    int userId = AuthHelper.GetUserId();
+                    DataTable dt = productBLL.GetProductById(productId);
+                    if (dt.Rows.Count > 0 && dt.Rows[0]["shopowner_id"] != DBNull.Value && Convert.ToInt32(dt.Rows[0]["shopowner_id"]) != userId)
+                    {
+                        lblMessage.Text = "Bạn không có quyền chỉnh sửa sản phẩm này.";
+                        lblMessage.CssClass = "alert alert-danger";
+                        lblMessage.Visible = true;
+                        return;
+                    }
                 }
 
                 string query = "UPDATE Products SET name = @name, description = @description, price = @price, " +
@@ -82,22 +139,27 @@ namespace ComputerStore.Admin
                 if (DbHelper.ExecuteNonQuery(query, parameters) > 0)
                 {
                     lblMessage.Text = "Cập nhật sản phẩm thành công!";
-                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    lblMessage.CssClass = "alert alert-success";
+                    lblMessage.Visible = true;
                 }
                 else
                 {
                     lblMessage.Text = "Cập nhật sản phẩm thất bại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
 
         protected void btnCancel_Click(object sender, EventArgs e)
         {
-            Response.Redirect("ProductManager.aspx");
+            Response.Redirect("~/Admin/ProductManager.aspx");
         }
     }
 }

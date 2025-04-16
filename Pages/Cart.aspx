@@ -10,7 +10,7 @@
     <form id="form1" runat="server">
         <div class="container">
             <h2>Giỏ hàng</h2>
-            <asp:Label ID="lblMessage" runat="server" ForeColor="Red"></asp:Label>
+            <asp:Label ID="lblMessage" runat="server" CssClass="alert alert-danger" Visible="false"></asp:Label>
             <asp:Repeater ID="rptCart" runat="server">
                 <HeaderTemplate>
                     <table class="table table-bordered">

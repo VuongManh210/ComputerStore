@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data;
+using System.Web.UI.WebControls;
 using ComputerStore.BLL;
+using ComputerStore; // Thêm namespace
 
 namespace ComputerStore.Pages
 {
@@ -11,18 +13,16 @@ namespace ComputerStore.Pages
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            AuthHelper.RequireUserOrShopowner(Response);
+
             if (!IsPostBack)
             {
-                if (Session["UserId"] == null)
-                {
-                    Response.Redirect("~/User/Login.aspx");
-                    return;
-                }
-
                 try
                 {
-                    if (int.TryParse(Request.QueryString["productId"], out int productId) &&
-                        int.TryParse(Request.QueryString["quantity"], out int quantity))
+                    int productId;
+                    int quantity;
+                    if (int.TryParse(Request.QueryString["productId"], out productId) &&
+                        int.TryParse(Request.QueryString["quantity"], out quantity))
                     {
                         DataTable product = productBLL.GetProductById(productId);
                         if (product.Rows.Count > 0)
@@ -30,7 +30,9 @@ namespace ComputerStore.Pages
                             int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
                             if (quantity > stock)
                             {
-                                lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                                lblMessage.Text = "Số lượng yêu cầu vượt quá tồn kho (" + stock + " sản phẩm).";
+                                lblMessage.CssClass = "alert alert-danger";
+                                lblMessage.Visible = true;
                                 return;
                             }
 
@@ -55,38 +57,48 @@ namespace ComputerStore.Pages
                         else
                         {
                             lblMessage.Text = "Sản phẩm không tồn tại.";
+                            lblMessage.CssClass = "alert alert-danger";
+                            lblMessage.Visible = true;
                         }
                     }
                     else
                     {
                         lblMessage.Text = "Thông tin đơn hàng không hợp lệ.";
+                        lblMessage.CssClass = "alert alert-danger";
+                        lblMessage.Visible = true;
                     }
                 }
                 catch (Exception ex)
                 {
                     lblMessage.Text = "Lỗi: " + ex.Message;
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
         }
 
         protected void btnConfirmOrder_Click(object sender, EventArgs e)
         {
-            if (Session["UserId"] == null)
-            {
-                Response.Redirect("~/User/Login.aspx");
-                return;
-            }
-
             try
             {
-                int userId = int.Parse(Session["UserId"].ToString());
-                int productId = int.Parse(Request.QueryString["productId"]);
-                int quantity = int.Parse(Request.QueryString["quantity"]);
+                int userId = AuthHelper.GetUserId();
+                int productId;
+                int quantity;
+                if (!int.TryParse(Request.QueryString["productId"], out productId) ||
+                    !int.TryParse(Request.QueryString["quantity"], out quantity))
+                {
+                    lblMessage.Text = "Thông tin đơn hàng không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
                 string shippingAddress = txtShippingAddress.Text.Trim();
 
                 if (string.IsNullOrEmpty(shippingAddress))
                 {
                     lblMessage.Text = "Vui lòng nhập địa chỉ giao hàng.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                     return;
                 }
 
@@ -94,25 +106,32 @@ namespace ComputerStore.Pages
                 if (product.Rows.Count == 0)
                 {
                     lblMessage.Text = "Sản phẩm không tồn tại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                     return;
                 }
 
                 int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
                 if (quantity > stock)
                 {
-                    lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                    lblMessage.Text = "Số lượng yêu cầu vượt quá tồn kho (" + stock + " sản phẩm).";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                     return;
                 }
 
                 int orderId = orderBLL.CreateOrder(userId, productId, quantity, shippingAddress);
-                lblMessage.Text = $"Đơn hàng #{orderId} đã được tạo thành công!";
-                lblMessage.ForeColor = System.Drawing.Color.Green;
+                lblMessage.Text = "Đơn hàng #" + orderId + " đã được tạo thành công!";
+                lblMessage.CssClass = "alert alert-success";
+                lblMessage.Visible = true;
 
                 Response.Redirect("~/Pages/Payment.aspx?orderId=" + orderId);
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
     }

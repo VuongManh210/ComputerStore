@@ -22,9 +22,14 @@ namespace ComputerStore.BLL
             return productDAL.GetProductImages(productId);
         }
 
-        public bool AddProduct(string name, string description, decimal price, int stockQuantity, string imageData)
+        public DataTable GetProductsByShopowner(int shopownerId)
         {
-            return productDAL.AddProduct(name, description, price, stockQuantity, imageData) > 0;
+            return productDAL.GetProductsByShopowner(shopownerId);
+        }
+
+        public bool AddProduct(string name, string description, decimal price, int stockQuantity, string imageData, int? shopownerId)
+        {
+            return productDAL.AddProduct(name, description, price, stockQuantity, imageData, shopownerId) > 0;
         }
 
         public bool DeleteProduct(int productId)

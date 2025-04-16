@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Data;
+using System.Web.UI.WebControls;
 using ComputerStore.BLL;
+using ComputerStore; // Thêm namespace
 
 namespace ComputerStore.Pages
 {
@@ -10,13 +12,10 @@ namespace ComputerStore.Pages
 
         protected void Page_Load(object sender, EventArgs e)
         {
+            AuthHelper.RequireUserOrShopowner(Response);
+
             if (!IsPostBack)
             {
-                if (Session["UserId"] == null)
-                {
-                    Response.Redirect("~/User/Login.aspx");
-                    return;
-                }
                 BindCart();
             }
         }
@@ -25,7 +24,7 @@ namespace ComputerStore.Pages
         {
             try
             {
-                int userId = int.Parse(Session["UserId"].ToString());
+                int userId = AuthHelper.GetUserId();
                 DataTable cart = cartBLL.GetCartByUserId(userId);
                 rptCart.DataSource = cart;
                 rptCart.DataBind();
@@ -34,28 +33,42 @@ namespace ComputerStore.Pages
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
 
-        protected void btnRemove_Command(object sender, System.Web.UI.WebControls.CommandEventArgs e)
+        protected void btnRemove_Command(object sender, CommandEventArgs e)
         {
             try
             {
-                int cartId = int.Parse(e.CommandArgument.ToString());
+                int cartId;
+                if (!int.TryParse(e.CommandArgument.ToString(), out cartId))
+                {
+                    lblMessage.Text = "ID giỏ hàng không hợp lệ.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
+                    return;
+                }
                 if (cartBLL.RemoveFromCart(cartId))
                 {
                     lblMessage.Text = "Đã xóa sản phẩm khỏi giỏ hàng!";
-                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    lblMessage.CssClass = "alert alert-success";
+                    lblMessage.Visible = true;
                     BindCart();
                 }
                 else
                 {
                     lblMessage.Text = "Xóa sản phẩm thất bại.";
+                    lblMessage.CssClass = "alert alert-danger";
+                    lblMessage.Visible = true;
                 }
             }
             catch (Exception ex)
             {
                 lblMessage.Text = "Lỗi: " + ex.Message;
+                lblMessage.CssClass = "alert alert-danger";
+                lblMessage.Visible = true;
             }
         }
 

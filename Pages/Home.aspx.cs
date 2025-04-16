@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using ComputerStore.BLL;
 
 namespace ComputerStore.Pages
@@ -6,7 +7,6 @@ namespace ComputerStore.Pages
     public partial class Home : System.Web.UI.Page
     {
         private ProductBLL productBLL = new ProductBLL();
-        private CategoryBLL categoryBLL = new CategoryBLL();
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -14,15 +14,14 @@ namespace ComputerStore.Pages
             {
                 try
                 {
-                    rptCategories.DataSource = categoryBLL.GetAllCategories();
-                    rptCategories.DataBind();
-
-                    rptProducts.DataSource = productBLL.GetAllProducts();
+                    DataTable dt = productBLL.GetAllProducts();
+                    rptProducts.DataSource = dt;
                     rptProducts.DataBind();
                 }
                 catch (Exception ex)
                 {
-                    Response.Write("Lỗi: " + ex.Message);
+                    lblMessage.Text = "Lỗi: " + ex.Message;
+                    lblMessage.Visible = true;
                 }
             }
         }
