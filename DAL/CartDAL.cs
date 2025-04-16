@@ -33,5 +33,15 @@ namespace ComputerStore.DAL
             };
             return DbHelper.ExecuteNonQuery(query, parameters);
         }
+
+        public bool RemoveFromCart(int cartId)
+        {
+            string query = "DELETE FROM Cart WHERE cart_id = @cartId";
+            SqlParameter[] parameters = new SqlParameter[]
+            {
+                new SqlParameter("@cartId", cartId)
+            };
+            return DbHelper.ExecuteNonQuery(query, parameters) > 0;
+        }
     }
 }

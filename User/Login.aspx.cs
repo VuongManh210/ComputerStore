@@ -11,22 +11,25 @@ namespace ComputerStore.User
         protected void btnLogin_Click(object sender, EventArgs e)
         {
             string username = txtUsername.Text.Trim();
-            string password = txtPassword.Text.Trim(); // Trong thực tế, cần mã hóa
+            string password = txtPassword.Text.Trim();
 
-            DataTable dt = userBLL.GetUserByCredentials(username, password);
-            if (dt.Rows.Count > 0)
+            try
             {
-                Session["UserId"] = dt.Rows[0]["user_id"];
-                Session["Username"] = username;
-                Session["Role"] = dt.Rows[0]["role"].ToString();
-                if (Session["Role"].ToString() == "admin")
-                    Response.Redirect("../Admin/ProductManager.aspx");
+                DataTable dt = userBLL.GetUserByCredentials(username, password);
+                if (dt.Rows.Count > 0)
+                {
+                    Session["UserId"] = dt.Rows[0]["user_id"].ToString();
+                    Session["Role"] = dt.Rows[0]["role"].ToString();
+                    Response.Redirect("~/Pages/Home.aspx");
+                }
                 else
-                    Response.Redirect("../Pages/Home.aspx");
+                {
+                    lblMessage.Text = "Tên đăng nhập hoặc mật khẩu không đúng.";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                lblMessage.Text = "Sai tên đăng nhập hoặc mật khẩu!";
+                lblMessage.Text = "Lỗi: " + ex.Message;
             }
         }
     }

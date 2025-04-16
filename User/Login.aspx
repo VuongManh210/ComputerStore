@@ -4,6 +4,7 @@
 <head>
     <title>Đăng nhập</title>
     <link rel="stylesheet" href="../Assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../Assets/css/custom.css" />
 </head>
 <body>
     <div class="container">

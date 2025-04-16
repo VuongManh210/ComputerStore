@@ -27,6 +27,13 @@ namespace ComputerStore.Pages
                         DataTable product = productBLL.GetProductById(productId);
                         if (product.Rows.Count > 0)
                         {
+                            int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
+                            if (quantity > stock)
+                            {
+                                lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                                return;
+                            }
+
                             DataTable orderItems = new DataTable();
                             orderItems.Columns.Add("product_id", typeof(int));
                             orderItems.Columns.Add("name", typeof(string));
@@ -83,11 +90,24 @@ namespace ComputerStore.Pages
                     return;
                 }
 
+                DataTable product = productBLL.GetProductById(productId);
+                if (product.Rows.Count == 0)
+                {
+                    lblMessage.Text = "Sản phẩm không tồn tại.";
+                    return;
+                }
+
+                int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
+                if (quantity > stock)
+                {
+                    lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                    return;
+                }
+
                 int orderId = orderBLL.CreateOrder(userId, productId, quantity, shippingAddress);
                 lblMessage.Text = $"Đơn hàng #{orderId} đã được tạo thành công!";
                 lblMessage.ForeColor = System.Drawing.Color.Green;
 
-                // Chuyển hướng đến trang thanh toán (giả lập)
                 Response.Redirect("~/Pages/Payment.aspx?orderId=" + orderId);
             }
             catch (Exception ex)

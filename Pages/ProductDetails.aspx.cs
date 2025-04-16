@@ -23,7 +23,6 @@ namespace ComputerStore.Pages
                             fvProduct.DataSource = dt;
                             fvProduct.DataBind();
 
-                            // Gán dữ liệu cho Repeater hình ảnh
                             System.Web.UI.WebControls.Repeater rptImages = (System.Web.UI.WebControls.Repeater)fvProduct.FindControl("rptProductImages");
                             if (rptImages != null)
                             {
@@ -62,6 +61,20 @@ namespace ComputerStore.Pages
                 int productId = int.Parse(Request.QueryString["productId"]);
                 int quantity = int.Parse((fvProduct.FindControl("txtQuantity") as System.Web.UI.WebControls.TextBox).Text);
 
+                DataTable product = productBLL.GetProductById(productId);
+                if (product.Rows.Count == 0)
+                {
+                    lblMessage.Text = "Sản phẩm không tồn tại.";
+                    return;
+                }
+
+                int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
+                if (quantity > stock)
+                {
+                    lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                    return;
+                }
+
                 if (cartBLL.AddToCart(userId, productId, quantity))
                 {
                     lblMessage.Text = "Đã thêm vào giỏ hàng!";
@@ -90,6 +103,21 @@ namespace ComputerStore.Pages
             {
                 int productId = int.Parse(Request.QueryString["productId"]);
                 int quantity = int.Parse((fvProduct.FindControl("txtQuantity") as System.Web.UI.WebControls.TextBox).Text);
+
+                DataTable product = productBLL.GetProductById(productId);
+                if (product.Rows.Count == 0)
+                {
+                    lblMessage.Text = "Sản phẩm không tồn tại.";
+                    return;
+                }
+
+                int stock = Convert.ToInt32(product.Rows[0]["stock_quantity"]);
+                if (quantity > stock)
+                {
+                    lblMessage.Text = $"Số lượng yêu cầu vượt quá tồn kho ({stock} sản phẩm).";
+                    return;
+                }
+
                 Response.Redirect($"~/Pages/Checkout.aspx?productId={productId}&quantity={quantity}");
             }
             catch (Exception ex)

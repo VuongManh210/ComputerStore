@@ -16,5 +16,10 @@ namespace ComputerStore.BLL
         {
             return cartDAL.AddToCart(userId, productId, quantity) > 0;
         }
+
+        public bool RemoveFromCart(int cartId)
+        {
+            return cartDAL.RemoveFromCart(cartId);
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using ComputerStore.BLL;
 
 namespace ComputerStore.Pages
@@ -16,18 +17,51 @@ namespace ComputerStore.Pages
                     Response.Redirect("~/User/Login.aspx");
                     return;
                 }
+                BindCart();
+            }
+        }
 
-                try
+        private void BindCart()
+        {
+            try
+            {
+                int userId = int.Parse(Session["UserId"].ToString());
+                DataTable cart = cartBLL.GetCartByUserId(userId);
+                rptCart.DataSource = cart;
+                rptCart.DataBind();
+                btnCheckout.Visible = cart.Rows.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                lblMessage.Text = "Lỗi: " + ex.Message;
+            }
+        }
+
+        protected void btnRemove_Command(object sender, System.Web.UI.WebControls.CommandEventArgs e)
+        {
+            try
+            {
+                int cartId = int.Parse(e.CommandArgument.ToString());
+                if (cartBLL.RemoveFromCart(cartId))
                 {
-                    int userId = int.Parse(Session["UserId"].ToString());
-                    rptCart.DataSource = cartBLL.GetCartByUserId(userId);
-                    rptCart.DataBind();
+                    lblMessage.Text = "Đã xóa sản phẩm khỏi giỏ hàng!";
+                    lblMessage.ForeColor = System.Drawing.Color.Green;
+                    BindCart();
                 }
-                catch (Exception ex)
+                else
                 {
-                    lblMessage.Text = "Lỗi: " + ex.Message;
+                    lblMessage.Text = "Xóa sản phẩm thất bại.";
                 }
             }
+            catch (Exception ex)
+            {
+                lblMessage.Text = "Lỗi: " + ex.Message;
+            }
+        }
+
+        protected void btnCheckout_Click(object sender, EventArgs e)
+        {
+            Response.Redirect("~/Pages/Checkout.aspx");
         }
     }
 }

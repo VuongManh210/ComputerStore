@@ -4,6 +4,7 @@
 <head>
     <title>Thanh toán</title>
     <link rel="stylesheet" href="../Assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../Assets/css/custom.css" />
 </head>
 <body>
     <form id="form1" runat="server">

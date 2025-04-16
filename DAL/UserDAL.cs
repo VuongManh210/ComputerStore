@@ -8,23 +8,23 @@ namespace ComputerStore.DAL
     {
         public DataTable GetUserByCredentials(string username, string password)
         {
-            string query = "SELECT user_id, username, role, status FROM Users WHERE username = @username AND password = @password AND status = 'active'";
+            string query = "SELECT user_id, username, role, status, password FROM Users WHERE username = @username AND status = 'active'";
             SqlParameter[] parameters = new SqlParameter[]
             {
-                new SqlParameter("@username", username),
-                new SqlParameter("@password", password) // Trong thực tế, cần mã hóa
+                new SqlParameter("@username", username)
             };
             return DbHelper.ExecuteQuery(query, parameters);
         }
 
         public int RegisterUser(string username, string password, string email, string fullName, string phone, string address)
         {
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
             string query = "INSERT INTO Users (username, password, email, full_name, phone, address, role, status) " +
                           "VALUES (@username, @password, @email, @fullName, @phone, @address, 'user', 'active')";
             SqlParameter[] parameters = new SqlParameter[]
             {
                 new SqlParameter("@username", username),
-                new SqlParameter("@password", password),
+                new SqlParameter("@password", hashedPassword),
                 new SqlParameter("@email", email),
                 new SqlParameter("@fullName", fullName ?? (object)DBNull.Value),
                 new SqlParameter("@phone", phone ?? (object)DBNull.Value),

@@ -3,6 +3,7 @@
 <html>
 <head>
     <title>Thanh toán</title>
+    <link rel="stylesheet" href="../Assets/css/custom.css" />
     <link rel="stylesheet" href="../Assets/css/bootstrap.min.css" />
 </head>
 <body>

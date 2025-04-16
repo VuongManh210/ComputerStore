@@ -10,7 +10,16 @@ namespace ComputerStore.BLL
 
         public DataTable GetUserByCredentials(string username, string password)
         {
-            return userDAL.GetUserByCredentials(username, password);
+            DataTable dt = userDAL.GetUserByCredentials(username, password);
+            if (dt.Rows.Count > 0)
+            {
+                string storedHash = dt.Rows[0]["password"].ToString();
+                if (BCrypt.Net.BCrypt.Verify(password, storedHash))
+                {
+                    return dt;
+                }
+            }
+            return new DataTable();
         }
 
         public bool RegisterUser(string username, string password, string email, string fullName, string phone, string address)
